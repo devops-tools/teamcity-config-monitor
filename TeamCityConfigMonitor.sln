@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamCityConfigMonitor", "TeamCityConfigMonitor\TeamCityConfigMonitor.csproj", "{8CB81C3D-7B25-4AC3-BF7C-88389542E9CF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EA8E274F-8290-493F-A555-63459BF51D19}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8CB81C3D-7B25-4AC3-BF7C-88389542E9CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8CB81C3D-7B25-4AC3-BF7C-88389542E9CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8CB81C3D-7B25-4AC3-BF7C-88389542E9CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8CB81C3D-7B25-4AC3-BF7C-88389542E9CF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
