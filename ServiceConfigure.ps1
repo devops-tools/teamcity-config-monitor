@@ -1,6 +1,6 @@
 param(
   [Parameter(Mandatory = $true)]
-  [string] $config,
+  [string] $configFile,
 
   [string] $teamCityDataDir = $null,
 
@@ -12,7 +12,7 @@ param(
 
   [string] $gitRemoteRepository = $null
 )
-$xml = (Get-Content $config) -as [xml]
+$xml = (Get-Content $configFile) -as [xml]
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigName"]/@value').set_InnerXML($gitConfigName)
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigEmail"]/@value').set_InnerXML($gitConfigEmail)
 if($teamCityDataDir) {
@@ -21,4 +21,4 @@ if($teamCityDataDir) {
 if($gitRemoteRepository) {
     $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitRemoteRepository"]/@value').set_InnerXML($gitRemoteRepository)
 }
-$xml.Save($config)
+$xml.Save($configFile)
