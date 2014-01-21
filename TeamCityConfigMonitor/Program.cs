@@ -13,7 +13,7 @@ namespace TeamCityConfigMonitor
             if (Environment.UserInteractive)
             {
                 Console.Write("Watching TeamCity config. ");
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.Write("Press any key to stop.\n");
                 Console.ResetColor();
                 Git.Instance.Init();

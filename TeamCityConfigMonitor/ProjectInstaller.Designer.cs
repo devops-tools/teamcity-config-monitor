@@ -40,8 +40,7 @@
             // watchServiceInstaller
             // 
             this.watchServiceInstaller.DelayedAutoStart = true;
-            this.watchServiceInstaller.Description = "Monitors the TeamCity configuration directory and commits changes to Git source c" +
-    "ontrol.";
+            this.watchServiceInstaller.Description = "Monitors the TeamCity configuration directory and commits changes to Git source control.";
             this.watchServiceInstaller.DisplayName = "TeamCity Config Monitor";
             this.watchServiceInstaller.ServiceName = "WatchService";
             this.watchServiceInstaller.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
