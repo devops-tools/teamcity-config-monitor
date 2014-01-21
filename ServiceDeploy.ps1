@@ -90,7 +90,7 @@ Invoke-Command -ComputerName $computerName -Script {
     if($service -and $service.AcceptStop){
       Write-Host ("Stopping service {0} ({1}) on host: {2}." -f $service.Name, $service.DisplayName, $computerName)
       $stopStatus = $service.StopService()
-      switch ($stopStatus.ReturnValue) {
+      switch ([int]$stopStatus.ReturnValue) {
         0 { Write-Host ("Service {0}, on host: {1}, stopped." -f $name, $computerName) }
         10 { Write-Host ("Service {0}, on host: {1}, was not running." -f $name, $computerName) }
         default { Write-Host ("Error, service {0}, on host: {1}, not stopped. Return code: {2}, ({3})." -f $name, $computerName, $($stopStatus.ReturnValue), $returnCodes[([int]$stopStatus.ReturnValue)]) }
@@ -101,7 +101,7 @@ Invoke-Command -ComputerName $computerName -Script {
     # Delete Service -------------------------------------------
     Write-Host ("Deleting service {0} ({1}) on host: {2}." -f $service.Name, $service.DisplayName, $computerName)
     $deleteStatus = $service.Delete()
-    switch ($deleteStatus.ReturnValue) {
+    switch ([int]$deleteStatus.ReturnValue) {
       0 { Write-Host ("Success, service: {0}, on host: {1}, deleted." -f $name, $computerName) }
       default { Write-Host ("Error, service {0}, on host: {1}, not deleted. Return code: {2}, ({3})." -f $name, $computerName, $($deleteStatus.ReturnValue), $returnCodes[([int]$deleteStatus.ReturnValue)]) }
     }
@@ -154,7 +154,7 @@ Invoke-Command -ComputerName $computerName -Script {
         # Configure service to use provided credentials
         Write-Host ("Changing service {0} ({1}) to run under user account: {2}." -f $service.Name, $service.DisplayName, $username)
         $changeStatus = $service.Change($null, $null, $null, $null, $null, $null, $username, $password, $null, $null, $null)
-        switch ($changeStatus.ReturnValue) {
+        switch ([int]$changeStatus.ReturnValue) {
           0 { Write-Host ("Success, service: {0}, on host: {1}, set to run under user account: {2}." -f $name, $computerName, $username) }
           default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[([int]$changeStatus.ReturnValue)]) }
         }
@@ -166,7 +166,7 @@ Invoke-Command -ComputerName $computerName -Script {
       if($startup -eq "Automatic") {
         Write-Host ("Starting service {0} ({1}) on host: {2}." -f $service.Name, $service.DisplayName, $computerName)
         $startStatus = $service.StartService()
-        switch ($startStatus.ReturnValue) {
+        switch ([int]$startStatus.ReturnValue) {
           0 {
             Write-Host ("Service {0}, on host: {1}, started." -f $name, $computerName)
             Write-Host ("Waiting a few seconds to see if it stays running." -f $name, $computerName)
@@ -177,13 +177,13 @@ Invoke-Command -ComputerName $computerName -Script {
               "Stopped" {
                 Write-Host ("Service {0}, on host: {1}, started but then stopped. Check the service logs for more information." -f $name, $computerName)
               }
-              # Service is running correctly, set service recovery options.
-              # http://gallery.technet.microsoft.com/scriptcenter/Set-Windows-Service-via-899f89f3
-              "Running" {
+              default {
+                Write-Host ("Service {0}, on host: {1} entered state: {2}." -f $name, $computerName, $service.State)
+                # Service is running. Set service recovery options.
+                # http://gallery.technet.microsoft.com/scriptcenter/Set-Windows-Service-via-899f89f3
                 sc.exe \\$computerName failure $service.Name reset= $recoverReset command= "$recoverCommand" actions= $recoverActions
                 Write-Host ("Service {0}, on host: {1}, recovery options set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
               }
-              default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[([int]$changeStatus.ReturnValue)]) }
             }
           }
           10 { Write-Host ("Service {0}, on host: {1}, already running." -f $name, $computerName) }
