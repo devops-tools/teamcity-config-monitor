@@ -23,8 +23,17 @@
   Use the form: domain\username.
 .Parameter password
   Defines the password for the user under which the service should run.
+.Parameter recoverReset
+  Defines the number of days to wait before resetting the fail count (0 = never).
+.Parameter recoverDelay
+  Defines the number of milliseconds to wait before taking recovery action.
+.Parameter recoverActions
+  Defines the recovery actions to take when the service stops unexpectedly.
+.Parameter recoverCommand
+  Defines a command to run when the service stops unexpectedly.
+  eg: "echo 'crash count: %1%'>> C:\Services\TeamCityConfigMonitor\crash.log"
 .Parameter removeOnly
-  If set, removes the service specified by name on host specified by computerName. No service will be installed
+  If set, removes the service specified by $name on host specified by $computerName. No service will be installed and configured.
 .Example
   Usage:
   .\ServiceDeploy.ps1 -computerName hostname.domain.com -name TeamCityConfigMonitor -display "TeamCity Config Monitor" -path "C:\Services\TeamCityConfigMonitor\TeamCityConfigMonitor.exe" -username "domain\username" -password "password"
@@ -48,6 +57,11 @@ param(
   [string] $username = $null,
   [string] $password = $null,
 
+  [int] $recoverReset = 0,
+  [int] $recoverDelay = 60000,
+  [string] $recoverActions = "restart/$recoverDelay/restart/$recoverDelay/restart/$recoverDelay",
+  [string] $recoverCommand = $null,
+
   [switch] $removeOnly = $false
 )
 
@@ -61,6 +75,10 @@ Invoke-Command -ComputerName $computerName -Script {
     [string] $startup,
     [string] $username,
     [string] $password,
+    [int] $recoverReset,
+    [int] $recoverDelay,
+    [string] $recoverActions,
+    [string] $recoverCommand,
     [bool] $removeOnly
   )
   $returnCodes = @{ 0 = "Success"; 1 = "Not Supported"; 2 = "Access Denied"; 3 = "Dependent Services Running"; 4 = "Invalid Service Control"; 5 = "Service Cannot Accept Control"; 6 = "Service Not Active"; 7 = "Service Request Timeout"; 8 = "Unknown Failure"; 9 = "Path Not Found"; 10 = "Service Already Running"; 11 = "Service Database Locked"; 12 = "Service Dependency Deleted"; 13 = "Service Dependency Failure"; 14 = "Service Disabled"; 15 = "Service Logon Failure"; 16 = "Service Marked For Deletion"; 17 = "Service No Thread"; 18 = "Status Circular Dependency"; 19 = "Status Duplicate Name"; 20 = "Status Invalid Name"; 21 = "Status Invalid Parameter"; 22 = "Status Invalid Service Account"; 23 = "Status Service Exists"; 24 = "Service Already Paused" }
@@ -154,8 +172,18 @@ Invoke-Command -ComputerName $computerName -Script {
             Write-Host ("Waiting a few seconds to see if it stays running." -f $name, $computerName)
             Start-Sleep -s 1
             $service = Get-WmiObject -Class Win32_Service -Filter "Name='$name'"
-            if($service.State -eq "Stopped"){
-              Write-Host ("Service {0}, on host: {1}, started but then stopped. Check the service logs for more information." -f $name, $computerName)
+            switch ($service.State) {
+              # Handle service starts then stops.
+              "Stopped" {
+                Write-Host ("Service {0}, on host: {1}, started but then stopped. Check the service logs for more information." -f $name, $computerName)
+              }
+              # Service is running correctly, set service recovery options.
+              # http://gallery.technet.microsoft.com/scriptcenter/Set-Windows-Service-via-899f89f3
+              "Running" {
+                sc.exe \\$computerName failure $service.Name reset= $recoverReset command= "$recoverCommand" actions= $recoverActions
+                Write-Host ("Service {0}, on host: {1}, recovery options set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
+              }
+              default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[$changeStatus.ReturnValue]) }
             }
           }
           10 { Write-Host ("Service {0}, on host: {1}, already running." -f $name, $computerName) }
@@ -166,4 +194,4 @@ Invoke-Command -ComputerName $computerName -Script {
       Write-Host ("Error, failed to create service: {0}, on host: {1}." -f $name, $computerName)
     }
   }
-} -ArgumentList $computerName, $name, $display, $description, $path, $startup, $username, $password, $removeOnly
+} -ArgumentList $computerName, $name, $display, $description, $path, $startup, $username, $password, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand, $removeOnly
