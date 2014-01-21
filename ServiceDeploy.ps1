@@ -187,6 +187,7 @@ Invoke-Command -ComputerName $computerName -Script {
             }
           }
           10 { Write-Host ("Service {0}, on host: {1}, already running." -f $name, $computerName) }
+          15 { Write-Host ("Error, service {0}, on host: {1}, not started. Return code: {2}, ({3}). Username: {4}, Password: {5}." -f $name, $computerName, $($startStatus.ReturnValue), $returnCodes[([int]$startStatus.ReturnValue)], $username, $password) }
           default { Write-Host ("Error, service {0}, on host: {1}, not started. Return code: {2}, ({3})." -f $name, $computerName, $($startStatus.ReturnValue), $returnCodes[([int]$startStatus.ReturnValue)]) }
         }
       }
