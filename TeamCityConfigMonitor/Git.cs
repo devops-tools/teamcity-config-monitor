@@ -14,7 +14,7 @@ namespace TeamCityConfigMonitor
         private static readonly string GitConfigEmail = ConfigurationManager.AppSettings.Get("GitConfigEmail");
         public static readonly string Origin = ConfigurationManager.AppSettings.Get("GitRemoteRepository");
         static readonly string ConfigFolder = Path.Combine(Helpers.GetDataFolder(), "config");
-        private static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildNumbers.properties" };
+        public static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildNumbers.properties" };
 
         private static Signature Committer
         {
@@ -155,7 +155,9 @@ namespace TeamCityConfigMonitor
             var status = repository.Index.RetrieveStatus();
             return status.Modified
                 .Union(status.Untracked)
-                .Union(status.Missing).Any();
+                .Union(status.Missing)
+                // Hack!
+                .Any(x => !Git.IgnoredExtensions.Any(x.FilePath.EndsWith));
         }
 
         public static void CommitUnstagedChanges(this Repository repository, Signature committer)
@@ -167,9 +169,13 @@ namespace TeamCityConfigMonitor
                 { "Modified", status.Modified },
                 { "Missing", status.Missing }
             };
-            foreach (var key in changes.Keys.Where(x => changes[x].Any()))
+            foreach (var key in changes.Keys)
             {
-                var paths = changes[key].Select(x => x.FilePath).ToArray();
+                var paths = changes[key]
+                    // Hack!
+                    .Where(x => !Git.IgnoredExtensions.Any(x.FilePath.EndsWith))
+                    .Select(x => x.FilePath)
+                    .ToArray();
                 repository.Index.Stage(paths);
                 Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
                 var message = GetMessage(paths, key);

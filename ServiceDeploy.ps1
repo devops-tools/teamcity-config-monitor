@@ -1,6 +1,9 @@
 <#
 .Synopsis
-  Creates a Deploy.Package.xml file for a given application
+  Installs a Windows service on a remote computer.
+  Sets the credentials for the service to run under.
+  Grants SeServiceLogonRight to the account.
+  Sets service recovery options.
 .Parameter computerName
   Defines the name of the computer which will host the service.
   Default is the local computer on which the script is run.
