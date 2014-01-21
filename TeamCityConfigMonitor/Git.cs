@@ -4,7 +4,6 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using LibGit2Sharp;
 
 namespace TeamCityConfigMonitor
@@ -15,6 +14,7 @@ namespace TeamCityConfigMonitor
         private static readonly string GitConfigEmail = ConfigurationManager.AppSettings.Get("GitConfigEmail");
         public static readonly string Origin = ConfigurationManager.AppSettings.Get("GitRemoteRepository");
         static readonly string ConfigFolder = Path.Combine(Helpers.GetDataFolder(), "config");
+        private static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildNumbers.properties" };
 
         private static Signature Committer
         {
@@ -38,13 +38,11 @@ namespace TeamCityConfigMonitor
 
         public void Init()
         {
-            Thread.Sleep(10000);
             var gitIgnore = Path.Combine(ConfigFolder, ".gitignore");
-            if (!File.Exists(gitIgnore))
-            {
-                File.AppendAllLines(gitIgnore, Watcher.ExcludeFilters.Select(x => string.Concat("*", x)));
-                Logger.Log.Write(".gitIgnore created at: {0}", gitIgnore);
-            }
+            var ignoreFileExists = File.Exists(gitIgnore);
+            File.WriteAllLines(gitIgnore, IgnoredExtensions.Select(x => string.Concat("*", x)));
+            Logger.Log.Write(".gitIgnore {0} at: {1}", ignoreFileExists ? "updated" : "created", gitIgnore);
+
             if (!File.Exists(Path.Combine(ConfigFolder, ".git", "HEAD")))
             {
                 try

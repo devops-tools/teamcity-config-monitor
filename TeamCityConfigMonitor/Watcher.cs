@@ -9,7 +9,6 @@ namespace TeamCityConfigMonitor
     {
         public static readonly string ConfigFolder = Path.Combine(Helpers.GetDataFolder(), "config");
         public static readonly string[] IncludeFilters = { ".xml", ".xsd", ".properties", ".dist", ".dtd", ".ftl" };
-        public static readonly string[] ExcludeFilters = { ".1", ".2", ".3", ".new", ".bak" };
 
         [PermissionSet(SecurityAction.Demand, Name = "FullTrust")]
         public static void Watch()
@@ -25,7 +24,6 @@ namespace TeamCityConfigMonitor
                 Filter = string.Concat("*", filter)
             }))
             {
-                
                 w.Changed += OnChanged;
                 w.Created += OnChanged;
                 w.Deleted += OnChanged;
