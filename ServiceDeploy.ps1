@@ -93,7 +93,7 @@ Invoke-Command -ComputerName $computerName -Script {
       switch ($stopStatus.ReturnValue) {
         0 { Write-Host ("Service {0}, on host: {1}, stopped." -f $name, $computerName) }
         10 { Write-Host ("Service {0}, on host: {1}, was not running." -f $name, $computerName) }
-        default { Write-Host ("Error, service {0}, on host: {1}, not stopped. Return code: {2}, ({3})." -f $name, $computerName, $($stopStatus.ReturnValue), $returnCodes[$($stopStatus.ReturnValue)]) }
+        default { Write-Host ("Error, service {0}, on host: {1}, not stopped. Return code: {2}, ({3})." -f $name, $computerName, $($stopStatus.ReturnValue), $returnCodes[([int]$stopStatus.ReturnValue)]) }
       }
     } else {
       Write-Host ("Service: {0} ({1}) on host: {2} will not accept a stop command." -f $service.Name, $service.DisplayName, $computerName)
@@ -103,7 +103,7 @@ Invoke-Command -ComputerName $computerName -Script {
     $deleteStatus = $service.Delete()
     switch ($deleteStatus.ReturnValue) {
       0 { Write-Host ("Success, service: {0}, on host: {1}, deleted." -f $name, $computerName) }
-      default { Write-Host ("Error, service {0}, on host: {1}, not deleted. Return code: {2}, ({3})." -f $name, $computerName, $($deleteStatus.ReturnValue), $returnCodes[$($deleteStatus.ReturnValue)]) }
+      default { Write-Host ("Error, service {0}, on host: {1}, not deleted. Return code: {2}, ({3})." -f $name, $computerName, $($deleteStatus.ReturnValue), $returnCodes[([int]$deleteStatus.ReturnValue)]) }
     }
   } else {
     Write-Host ("Service: {0}, not found on host: {1}." -f $name, $computerName)
@@ -156,7 +156,7 @@ Invoke-Command -ComputerName $computerName -Script {
         $changeStatus = $service.Change($null, $null, $null, $null, $null, $null, $username, $password, $null, $null, $null)
         switch ($changeStatus.ReturnValue) {
           0 { Write-Host ("Success, service: {0}, on host: {1}, set to run under user account: {2}." -f $name, $computerName, $username) }
-          default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[$($changeStatus.ReturnValue)]) }
+          default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[([int]$changeStatus.ReturnValue)]) }
         }
       } else {
         Write-Host ("Service: {0}, is set to run under user account: {1}." -f $name, $service.StartName)
@@ -183,11 +183,11 @@ Invoke-Command -ComputerName $computerName -Script {
                 sc.exe \\$computerName failure $service.Name reset= $recoverReset command= "$recoverCommand" actions= $recoverActions
                 Write-Host ("Service {0}, on host: {1}, recovery options set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
               }
-              default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[$($changeStatus.ReturnValue)]) }
+              default { Write-Host ("Error: Failed to set service: {0}, on host: {1}, to run under user account: {2}. Return code: {3}, ({4}." -f $name, $computerName, $username, $($changeStatus.ReturnValue), $returnCodes[([int]$changeStatus.ReturnValue)]) }
             }
           }
           10 { Write-Host ("Service {0}, on host: {1}, already running." -f $name, $computerName) }
-          default { Write-Host ("Error, service {0}, on host: {1}, not started. Return code: {2}, ({3})." -f $name, $computerName, $($startStatus.ReturnValue), $returnCodes[$($startStatus.ReturnValue)]) }
+          default { Write-Host ("Error, service {0}, on host: {1}, not started. Return code: {2}, ({3})." -f $name, $computerName, $($startStatus.ReturnValue), $returnCodes[([int]$startStatus.ReturnValue)]) }
         }
       }
     } else {
