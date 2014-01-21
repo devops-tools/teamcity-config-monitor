@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
+using System.Text;
+
 namespace TeamCityConfigMonitor
 {
     class Logger
     {
+        public const string EventLogName = "TeamCity Config Monitor";
         public const string ServiceName = "WatchService";
         private static Logger _instance;
         public static Logger Log { get { return _instance ?? (_instance = new Logger()); } }
@@ -28,7 +32,7 @@ namespace TeamCityConfigMonitor
             {
                 if (!EventLog.SourceExists(ServiceName))
                 {
-                    EventLog.CreateEventSource(ServiceName, string.Concat(ServiceName, "Log"));
+                    EventLog.CreateEventSource(ServiceName, EventLogName);
                     return;
                 }
                 _eventLog = new EventLog
@@ -44,9 +48,9 @@ namespace TeamCityConfigMonitor
             if (Environment.UserInteractive)
             {
                 var consoleColors = new Dictionary<EventLogEntryType, ConsoleColor> {
-                    { EventLogEntryType.Warning, ConsoleColor.DarkYellow },
-                    { EventLogEntryType.Error, ConsoleColor.DarkRed },
-                    { EventLogEntryType.FailureAudit, ConsoleColor.Red },
+                    { EventLogEntryType.Warning, ConsoleColor.Yellow },
+                    { EventLogEntryType.Error, ConsoleColor.Red },
+                    { EventLogEntryType.FailureAudit, ConsoleColor.DarkYellow },
                     { EventLogEntryType.SuccessAudit, ConsoleColor.DarkGreen },
                     { EventLogEntryType.Information, ConsoleColor.Green },
                 };
@@ -67,9 +71,31 @@ namespace TeamCityConfigMonitor
         public void Write(Exception exception)
         {
             if (Environment.UserInteractive)
-                Console.WriteLine("{0} {1}\n{2}", DateTimeOffset.Now, exception.Message, exception.StackTrace);
+                Write(exception.ToMessage(), EventLogEntryType.Error);
             else
-                _eventLog.WriteEntry(string.Concat(exception.Message, "\n", exception.StackTrace), EventLogEntryType.Error);
+                _eventLog.WriteEntry(exception.ToMessage(), EventLogEntryType.Error);
+        }
+    }
+
+    public static class Extensions
+    {
+        public static string ToMessage(this Exception exception, bool isInnerException = false)
+        {
+            var message = new StringBuilder();
+            if (!isInnerException)
+                message.AppendFormat("Faulting application name: {0}, version: {1}, time stamp: {2}, path: {3}\n",
+                    Assembly.GetEntryAssembly().FullName,
+                    Assembly.GetEntryAssembly().GetName().Version,
+                    DateTimeOffset.Now,
+                    Process.GetCurrentProcess().MainModule.FileName);
+            message.AppendFormat("Source: {0}, Exception: {1}, Message: {2}\n",
+                exception.Source,
+                exception.GetType(),
+                exception.Message);
+            message.AppendLine(exception.StackTrace);
+            if (exception.InnerException != null)
+                message.AppendLine(exception.InnerException.ToMessage());
+            return message.ToString();
         }
     }
 }
