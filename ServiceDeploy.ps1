@@ -181,8 +181,13 @@ Invoke-Command -ComputerName $computerName -Script {
                 Write-Host ("Service {0}, on host: {1} entered state: {2}." -f $name, $computerName, $service.State)
                 # Service is running. Set service recovery options.
                 # http://gallery.technet.microsoft.com/scriptcenter/Set-Windows-Service-via-899f89f3
-                sc.exe \\$computerName failure $service.Name reset= $recoverReset command= `"$recoverCommand`" actions= $recoverActions
-                Write-Host ("Service {0}, on host: {1}, recovery options set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
+                $scStatus = sc.exe \\$computerName failure $service.Name reset= $recoverReset command= `"$recoverCommand`" actions= $recoverActions
+                if($scStatus -eq "[SC] ChangeServiceConfig2 SUCCESS") {
+                  Write-Host ("Service {0}, on host: {1}, recovery options set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
+                } else {
+                  Write-Host ("Error, service {0}, on host: {1}, recovery options not set (reset (days): {2}, delay (ms): {3}, actions: {4}, command: `"{5}`")." -f $name, $computerName, $recoverReset, $recoverDelay, $recoverActions, $recoverCommand)
+                  $scStatus
+                }
               }
             }
           }
