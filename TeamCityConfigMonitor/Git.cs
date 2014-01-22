@@ -185,7 +185,7 @@ namespace TeamCityConfigMonitor
                 { "Modified", status.Modified },
                 { "Missing", status.Missing }
             };
-            foreach (var key in changes.Keys)
+            foreach (var key in changes.Keys.Where(x => changes[x].Any()))
             {
                 var paths = changes[key]
                     .Select(x => x.FilePath)
