@@ -14,7 +14,7 @@ namespace TeamCityConfigMonitor
         private static readonly string GitConfigEmail = ConfigurationManager.AppSettings.Get("GitConfigEmail");
         public static readonly string Origin = ConfigurationManager.AppSettings.Get("GitRemoteRepository");
         static readonly string ConfigFolder = Path.Combine(Helpers.GetDataFolder(), "config");
-        public static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildNumbers.properties" };
+        public static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildnumbers.properties" };
 
         private static Signature Committer
         {
@@ -156,8 +156,7 @@ namespace TeamCityConfigMonitor
             return status.Modified
                 .Union(status.Untracked)
                 .Union(status.Missing)
-                // Hack!
-                .Any(x => !Git.IgnoredExtensions.Any(x.FilePath.EndsWith));
+                .Any(entry => !Git.IgnoredExtensions.Any(entry.FilePath.ToLower().EndsWith));
         }
 
         public static void CommitUnstagedChanges(this Repository repository, Signature committer)
@@ -172,15 +171,19 @@ namespace TeamCityConfigMonitor
             foreach (var key in changes.Keys)
             {
                 var paths = changes[key]
-                    // Hack!
-                    .Where(x => !Git.IgnoredExtensions.Any(x.FilePath.EndsWith))
                     .Select(x => x.FilePath)
+                    .Where(path => !Git.IgnoredExtensions.Any(ext => path.ToLower().EndsWith(ext)))
                     .ToArray();
-                repository.Index.Stage(paths);
-                Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
-                var message = GetMessage(paths, key);
-                repository.Commit(message, committer);
-                Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
+                if (paths.Any())
+                {
+                    repository.Index.Stage(paths);
+                    Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
+                    var message = GetMessage(paths, key);
+                    repository.Commit(message, committer);
+                    Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
+                }
+                else
+                    Logger.Log.Write(string.Format("{0} configuration changes manually ignored.\n{1}", changes[key].Count(), string.Join("\n", changes[key].Select(x => x.FilePath))), EventLogEntryType.Warning);
             }
         }
 
