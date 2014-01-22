@@ -87,6 +87,7 @@ namespace TeamCityConfigMonitor
             else
             {
                 Logger.Log.Write("Local git repository found at: {0}", ConfigFolder);
+                RemoveNewlyIgnored();
                 AddChanges();
             }
         }
@@ -135,6 +136,25 @@ namespace TeamCityConfigMonitor
                 throw;
             }
         }
+
+        private void RemoveNewlyIgnored()
+        {
+            try
+            {
+                lock (RepoLock)
+                {
+                    if (Root == null)
+                        Root = Repository.Init(ConfigFolder);
+                    using (var r = new Repository(Root))
+                        r.RemoveUntrackedFiles();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Log.Write(e);
+                throw;
+            }
+        }
     }
 
     public static class GitExtensions
@@ -153,10 +173,7 @@ namespace TeamCityConfigMonitor
         public static bool HasUnstagedChanges(this Repository repository)
         {
             var status = repository.Index.RetrieveStatus();
-            return status.Modified
-                .Union(status.Untracked)
-                .Union(status.Missing)
-                .Any(entry => !Git.IgnoredExtensions.Any(entry.FilePath.ToLower().EndsWith));
+            return status.Modified.Union(status.Untracked).Union(status.Missing).Any();
         }
 
         public static void CommitUnstagedChanges(this Repository repository, Signature committer)
@@ -172,18 +189,24 @@ namespace TeamCityConfigMonitor
             {
                 var paths = changes[key]
                     .Select(x => x.FilePath)
-                    .Where(path => !Git.IgnoredExtensions.Any(ext => path.ToLower().EndsWith(ext)))
                     .ToArray();
-                if (paths.Any())
-                {
-                    repository.Index.Stage(paths);
-                    Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
-                    var message = GetMessage(paths, key);
-                    repository.Commit(message, committer);
-                    Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
-                }
-                else
-                    Logger.Log.Write(string.Format("{0} configuration changes manually ignored.\n{1}", changes[key].Count(), string.Join("\n", changes[key].Select(x => x.FilePath))), EventLogEntryType.Warning);
+                repository.Index.Stage(paths);
+                Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
+                var message = GetMessage(paths, key);
+                repository.Commit(message, committer);
+                Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
+            }
+        }
+
+        public static void RemoveIgnoredPaths(this Repository repository, Signature committer)
+        {
+            var paths = repository.Index.Select(x => x.Path).Where(x => Git.IgnoredExtensions.Any(x.EndsWith)).ToArray();
+            if (paths.Any())
+            {
+                repository.Index.Remove(paths, false);
+                var message = string.Format("Removed {0} previously indexed, but now ignored, paths from source control.", paths.Count());
+                repository.Commit(message, committer);
+                Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
             }
         }
 
