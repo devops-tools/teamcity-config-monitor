@@ -4,7 +4,11 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using LibGit2Sharp;
+using Octokit;
+using Repository = LibGit2Sharp.Repository;
+using Signature = LibGit2Sharp.Signature;
 
 namespace TeamCityConfigMonitor
 {
@@ -155,6 +159,27 @@ namespace TeamCityConfigMonitor
                 throw;
             }
         }
+
+        #region GitHub Integration
+
+        private string GetGitOriginUrl()
+        {
+            throw new NotImplementedException();
+            var url = ConfigurationManager.AppSettings.Get("GitRemoteRepository");
+            if (string.IsNullOrWhiteSpace(url))
+                url = CreateGitHubRepository();
+            return url;
+        }
+
+        private string CreateGitHubRepository()
+        {
+            throw new NotImplementedException();
+            var github = new GitHubClient(new ProductHeaderValue("MyAmazingApp"));
+            github.Repository.Create("", new NewRepository(){ AutoInit = true, Description = "Blah!"});
+            return "";
+        }
+
+        #endregion
     }
 
     public static class GitExtensions
