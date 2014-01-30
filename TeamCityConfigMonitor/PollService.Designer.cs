@@ -1,13 +1,11 @@
-﻿using System.ComponentModel;
-
-namespace TeamCityConfigMonitor
+﻿namespace TeamCityConfigMonitor
 {
-    partial class WatchService
+    partial class PollService
     {
         /// <summary> 
         /// Required designer variable.
         /// </summary>
-        private IContainer components = null;
+        private System.ComponentModel.IContainer components = null;
 
         /// <summary>
         /// Clean up any resources being used.
@@ -30,8 +28,8 @@ namespace TeamCityConfigMonitor
         /// </summary>
         private void InitializeComponent()
         {
-            components = new Container();
-            this.ServiceName = MonitorServiceHost.Service.WatchService.Get("Name");
+            components = new System.ComponentModel.Container();
+            this.ServiceName = MonitorServiceHost.Service.PollService.Get("Name");
         }
 
         #endregion

@@ -12,14 +12,14 @@ namespace TeamCityConfigMonitor
 
         protected override void OnStart(string[] args)
         {
-            Logger.Log.Write("{0} started.", Logger.ServiceName);
-            Git.Instance.Init();
+            Logger.Log.Write(MonitorServiceHost.Service.WatchService, "{0} started.", GetType().Name);
+            Git.Instance.InitWatcher();
             Watcher.Watch();
         }
 
         protected override void OnStop()
         {
-            Logger.Log.Write("{0} stopped.", Logger.ServiceName);
+            Logger.Log.Write(MonitorServiceHost.Service.WatchService, "{0} stopped.", GetType().Name);
         }
     }
 }

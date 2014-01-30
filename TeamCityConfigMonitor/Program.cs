@@ -16,19 +16,25 @@ namespace TeamCityConfigMonitor
                 Console.ForegroundColor = ConsoleColor.DarkYellow;
                 Console.Write("Press any key to stop.\n");
                 Console.ResetColor();
-                Git.Instance.Init();
+                Git.Instance.InitWatcher();
                 Watcher.Watch();
+                Poller.Poll();
                 Console.ReadKey();
             }
             else
             {
                 try
                 {
-                    ServiceBase.Run(new WatchService());
+                    var services = new ServiceBase[]
+                    {
+                        new WatchService(),
+                        new PollService()
+                    };
+                    ServiceBase.Run(services);
                 }
                 catch (Exception exception)
                 {
-                    Logger.Log.Write(exception);
+                    Logger.Log.Write(MonitorServiceHost.Service.ServiceHost, exception);
                     throw;
                 }
             }

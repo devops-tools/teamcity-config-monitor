@@ -1,11 +1,15 @@
-﻿namespace TeamCityConfigMonitor
+﻿using System;
+using System.ComponentModel;
+using System.Linq;
+
+namespace TeamCityConfigMonitor
 {
     partial class ProjectInstaller
     {
         /// <summary>
         /// Required designer variable.
         /// </summary>
-        private System.ComponentModel.IContainer components = null;
+        private IContainer components = null;
 
         /// <summary> 
         /// Clean up any resources being used.
@@ -28,34 +32,36 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.watchServiceProcessInstaller = new System.ServiceProcess.ServiceProcessInstaller();
-            this.watchServiceInstaller = new System.ServiceProcess.ServiceInstaller();
+            this.serviceProcessInstaller = new System.ServiceProcess.ServiceProcessInstaller();
+            this.serviceInstaller = new System.ServiceProcess.ServiceInstaller();
+
             // 
-            // watchServiceProcessInstaller
+            // serviceProcessInstaller
             // 
-            this.watchServiceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
-            this.watchServiceProcessInstaller.Password = null;
-            this.watchServiceProcessInstaller.Username = null;
+            this.serviceProcessInstaller.Account = System.ServiceProcess.ServiceAccount.LocalSystem;
+            this.serviceProcessInstaller.Password = null;
+            this.serviceProcessInstaller.Username = null;
+
             // 
-            // watchServiceInstaller
+            // serviceInstaller
             // 
-            this.watchServiceInstaller.DelayedAutoStart = true;
-            this.watchServiceInstaller.Description = "Monitors the TeamCity configuration directory and commits changes to Git source control.";
-            this.watchServiceInstaller.DisplayName = "TeamCity Config Monitor";
-            this.watchServiceInstaller.ServiceName = "WatchService";
-            this.watchServiceInstaller.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
+            this.serviceInstaller.DelayedAutoStart = true;
+
+            this.serviceInstaller.Description = string.Join(", ", Enum.GetValues(typeof(MonitorServiceHost.Service)).Cast<MonitorServiceHost.Service>().Where(x => x != MonitorServiceHost.Service.ServiceHost).Select(x => string.Concat(x.Get("Name"), ": ", x.Get("Description"))));
+            this.serviceInstaller.ServiceName = MonitorServiceHost.Service.ServiceHost.Get("Name");
+            this.serviceInstaller.DisplayName = MonitorServiceHost.Service.ServiceHost.Get("Description");
+            this.serviceInstaller.StartType = System.ServiceProcess.ServiceStartMode.Automatic;
+
             // 
             // ProjectInstaller
             // 
-            this.Installers.AddRange(new System.Configuration.Install.Installer[] {
-            this.watchServiceProcessInstaller,
-            this.watchServiceInstaller});
+            this.Installers.AddRange(new System.Configuration.Install.Installer[] { this.serviceProcessInstaller, this.serviceInstaller});
 
         }
 
         #endregion
 
-        private System.ServiceProcess.ServiceProcessInstaller watchServiceProcessInstaller;
-        private System.ServiceProcess.ServiceInstaller watchServiceInstaller;
+        private System.ServiceProcess.ServiceProcessInstaller serviceProcessInstaller;
+        private System.ServiceProcess.ServiceInstaller serviceInstaller;
     }
 }

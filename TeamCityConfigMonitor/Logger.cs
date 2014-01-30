@@ -1,19 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Reflection;
-using System.Text;
+using System.Linq;
 
 namespace TeamCityConfigMonitor
 {
     class Logger
     {
-        public const string EventLogName = "TeamCity Config Monitor";
-        public const string ServiceName = "WatchService";
         private static Logger _instance;
         public static Logger Log { get { return _instance ?? (_instance = new Logger()); } }
 
-        private EventLog _eventLog;
+        private Dictionary<MonitorServiceHost.Service, EventLog> _eventLog;
 
         Logger()
         {
@@ -22,28 +19,29 @@ namespace TeamCityConfigMonitor
 
         public void Uninstall()
         {
-            if (EventLog.SourceExists(ServiceName))
-                EventLog.DeleteEventSource(ServiceName);
+            foreach (var serviceName in Enum.GetValues(typeof(MonitorServiceHost.Service)).Cast<MonitorServiceHost.Service>().Select(x => x.Get("Name")))
+                if (EventLog.SourceExists(serviceName))
+                    EventLog.DeleteEventSource(serviceName);
         }
 
         public void Install()
         {
             if (!Environment.UserInteractive)
             {
-                if (!EventLog.SourceExists(ServiceName))
+                foreach (var serviceName in Enum.GetValues(typeof(MonitorServiceHost.Service)).Cast<MonitorServiceHost.Service>().Select(x => x.Get("Name")))
                 {
-                    EventLog.CreateEventSource(ServiceName, EventLogName);
-                    return;
+                    if (!EventLog.SourceExists(serviceName))
+                        EventLog.CreateEventSource(serviceName, MonitorServiceHost.Service.ServiceHost.Get("Name"));
                 }
-                _eventLog = new EventLog
+                _eventLog = new Dictionary<MonitorServiceHost.Service, EventLog>
                 {
-                    Source = ServiceName,
-                    EnableRaisingEvents = true
+                    { MonitorServiceHost.Service.WatchService, new EventLog { Source = MonitorServiceHost.Service.WatchService.ToString(), EnableRaisingEvents = true } },
+                    { MonitorServiceHost.Service.PollService, new EventLog { Source = MonitorServiceHost.Service.PollService.ToString(), EnableRaisingEvents = true } }
                 };
             }
         }
 
-        public void Write(string entry, EventLogEntryType entryType = EventLogEntryType.Information)
+        public void Write(MonitorServiceHost.Service source, string entry, EventLogEntryType entryType = EventLogEntryType.Information)
         {
             if (Environment.UserInteractive)
             {
@@ -60,42 +58,20 @@ namespace TeamCityConfigMonitor
                 Console.Write("{0}\n", entry);
             }
             else
-                _eventLog.WriteEntry(entry, entryType);
+                _eventLog[source].WriteEntry(entry, entryType);
         }
 
-        public void Write(string entry, params object[] args)
+        public void Write(MonitorServiceHost.Service source, string entry, params object[] args)
         {
-            Write(string.Format(entry, args));
+            Write(source, string.Format(entry, args));
         }
 
-        public void Write(Exception exception)
+        public void Write(MonitorServiceHost.Service source, Exception exception)
         {
             if (Environment.UserInteractive)
-                Write(exception.ToMessage(), EventLogEntryType.Error);
+                Write(source, exception.ToMessage(), EventLogEntryType.Error);
             else
-                _eventLog.WriteEntry(exception.ToMessage(), EventLogEntryType.Error);
-        }
-    }
-
-    public static class Extensions
-    {
-        public static string ToMessage(this Exception exception, bool isInnerException = false)
-        {
-            var message = new StringBuilder();
-            if (!isInnerException)
-                message.AppendFormat("Faulting application name: {0}, version: {1}, time stamp: {2}, path: {3}\n",
-                    Assembly.GetEntryAssembly().FullName,
-                    Assembly.GetEntryAssembly().GetName().Version,
-                    DateTimeOffset.Now,
-                    Process.GetCurrentProcess().MainModule.FileName);
-            message.AppendFormat("Source: {0}, Exception: {1}, Message: {2}\n",
-                exception.Source,
-                exception.GetType(),
-                exception.Message);
-            message.AppendLine(exception.StackTrace);
-            if (exception.InnerException != null)
-                message.AppendLine(exception.InnerException.ToMessage());
-            return message.ToString();
+                _eventLog[source].WriteEntry(exception.ToMessage(), EventLogEntryType.Error);
         }
     }
 }
