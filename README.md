@@ -39,4 +39,4 @@ The [build][3] is generously hosted and run on the [CodeBetter TeamCity][4] infr
 
 The GNU GENERAL PUBLIC LICENSE Version 3, 29 June 2007 (Refer to the [LICENSE][8] file)
 
- [8]: https://github.com/teamcity-config-monitor/blob/master/LICENSE
+ [8]: https://github.com/grenade/teamcity-config-monitor/blob/master/LICENSE
