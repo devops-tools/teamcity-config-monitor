@@ -204,7 +204,7 @@ namespace TeamCityConfigMonitor
                     "Untracked",
                     new Dictionary<string, string>
                     {
-                        { "Project", "Config: {0}, added by: {1}." },
+                        { "Project", "{0}, added by: {1}." },
                         { "Default", "{0} configuration file addition{1} detected." }
                     }
                 },
@@ -212,7 +212,7 @@ namespace TeamCityConfigMonitor
                     "Modified",
                     new Dictionary<string, string>
                     {
-                        { "Project", "Config: {0}, modified by: {1}." },
+                        { "Project", "{0}, modified by: {1}." },
                         { "Default", "{0} configuration file modification{1} detected." }
                     }
                 },
@@ -220,7 +220,7 @@ namespace TeamCityConfigMonitor
                     "Missing",
                     new Dictionary<string, string>
                     {
-                        { "Project", "Config: {0}, deleted by: {1}." },
+                        { "Project", "{0}, deleted by: {1}." },
                         { "Default", "{0} configuration file deletion{1} detected." }
                     }
                 }
