@@ -4,6 +4,7 @@ param(
   
   [string] $teamCityDataDir = $null,
   [string] $teamCityAuditLog = $null,
+  [string] $teamCityUrl = $null,
   [string] $teamCityUsername = $null,
   [string] $teamCityPassword = $null,
 
@@ -20,6 +21,7 @@ $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigName"]/@val
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigEmail"]/@value').set_InnerXML($gitConfigEmail)
 
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityAuditLog"]/@value').set_InnerXML($teamCityAuditLog)
+$xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityUrl"]/@value').set_InnerXML($teamCityUrl)
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityUsername"]/@value').set_InnerXML($teamCityUsername)
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityPassword"]/@value').set_InnerXML($teamCityPassword)
 if($teamCityDataDir) {
