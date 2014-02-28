@@ -204,7 +204,7 @@ namespace TeamCityConfigMonitor
                     "Untracked",
                     new Dictionary<string, string>
                     {
-                        { "Project", "New build configuration detected: {0}." },
+                        { "Project", "Config: {0}, added by: {1}." },
                         { "Default", "{0} configuration file addition{1} detected." }
                     }
                 },
@@ -212,7 +212,7 @@ namespace TeamCityConfigMonitor
                     "Modified",
                     new Dictionary<string, string>
                     {
-                        { "Project", "Modified build configuration detected: {0}." },
+                        { "Project", "Config: {0}, modified by: {1}." },
                         { "Default", "{0} configuration file modification{1} detected." }
                     }
                 },
@@ -220,7 +220,7 @@ namespace TeamCityConfigMonitor
                     "Missing",
                     new Dictionary<string, string>
                     {
-                        { "Project", "Deleted build configuration detected: {0}." },
+                        { "Project", "Config: {0}, deleted by: {1}." },
                         { "Default", "{0} configuration file deletion{1} detected." }
                     }
                 }
@@ -229,7 +229,7 @@ namespace TeamCityConfigMonitor
             if (enumerable.Any(x => x.StartsWith("projects") && Path.GetFileName(Path.GetDirectoryName(x)) == "buildTypes"))
             {
                 var configId = Path.GetFileNameWithoutExtension(enumerable.First(x => x.EndsWith(".xml")));
-                return new CommitDetails(string.Format(messages[pool]["Project"], configId), configId);
+                return new CommitDetails(messages[pool]["Project"], configId);
             }
             return new CommitDetails(string.Format(messages[pool]["Default"], enumerable.Count(), enumerable.Count() == 1 ? string.Empty : "s"));
         }
@@ -238,7 +238,7 @@ namespace TeamCityConfigMonitor
         {
             public CommitDetails(string message, string configId = null)
             {
-                Message = message;
+                Message = string.Format(message, configId, "Unknown user");
                 if (!string.IsNullOrWhiteSpace(configId))
                 {
                     try
@@ -246,6 +246,8 @@ namespace TeamCityConfigMonitor
                         var auditEntry = Helpers.ReadEndTokens(ConfigurationManager.AppSettings.Get("TeamCityAuditLog"), 5, Encoding.UTF8, Environment.NewLine).Last(x => x.Contains(string.Format("id={0},", configId)));
                         var userId = auditEntry.Split(new[] { "id=" }, StringSplitOptions.RemoveEmptyEntries).Last().TrimEnd('"', '}', ' ');
                         Author = GetAuthor(userId);
+                        if (Author != null)
+                            Message = string.Format(message, configId, Author.Name);
                     }
                     catch (Exception ex)
                     {
