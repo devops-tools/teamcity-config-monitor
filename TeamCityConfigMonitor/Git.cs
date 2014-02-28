@@ -247,8 +247,9 @@ namespace TeamCityConfigMonitor
                         var userId = auditEntry.Split(new[] { "id=" }, StringSplitOptions.RemoveEmptyEntries).Last().TrimEnd('"', '}', ' ');
                         Author = GetAuthor(userId);
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Logger.Log.Write(ex);
                         Author = null;
                     }
                 }
@@ -259,17 +260,25 @@ namespace TeamCityConfigMonitor
 
             private Signature GetAuthor(string userId)
             {
-                using (var client = new WebClient())
+                try
                 {
-                    var up = string.Format("{0}:{1}",
-                        ConfigurationManager.AppSettings.Get("TeamCityUsername"),
-                        ConfigurationManager.AppSettings.Get("TeamCityPassword"));
-                    var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(up));
-                    client.Headers[HttpRequestHeader.Authorization] = "Basic " + credentials;
-                    var user = XDocument.Load(client.OpenRead(string.Concat(ConfigurationManager.AppSettings.Get("TeamCityUrl").TrimEnd('/'), "/httpAuth/app/rest/users/id:", userId))).Root;
-                    return user != null
-                        ? new Signature(user.Attribute("name").Value, user.Attribute("email").Value, DateTimeOffset.Now)
-                        : null;
+                    using (var client = new WebClient())
+                    {
+                        var up = string.Format("{0}:{1}",
+                            ConfigurationManager.AppSettings.Get("TeamCityUsername"),
+                            ConfigurationManager.AppSettings.Get("TeamCityPassword"));
+                        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(up));
+                        client.Headers[HttpRequestHeader.Authorization] = "Basic " + credentials;
+                        var user = XDocument.Load(client.OpenRead(string.Concat(ConfigurationManager.AppSettings.Get("TeamCityUrl").TrimEnd('/'), "/httpAuth/app/rest/users/id:", userId))).Root;
+                        return user != null
+                            ? new Signature(user.Attribute("name").Value, user.Attribute("email").Value, DateTimeOffset.Now)
+                            : null;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Write(ex);
+                    return null;
                 }
             }
         }
