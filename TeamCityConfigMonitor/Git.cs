@@ -4,6 +4,9 @@ using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Text;
+using System.Xml.Linq;
 using LibGit2Sharp;
 
 namespace TeamCityConfigMonitor
@@ -87,7 +90,6 @@ namespace TeamCityConfigMonitor
             else
             {
                 Logger.Log.Write("Local git repository found at: {0}", ConfigFolder);
-                RemoveNewlyIgnored();
                 AddChanges();
             }
         }
@@ -136,25 +138,6 @@ namespace TeamCityConfigMonitor
                 throw;
             }
         }
-
-        private void RemoveNewlyIgnored()
-        {
-            try
-            {
-                lock (RepoLock)
-                {
-                    if (Root == null)
-                        Root = Repository.Init(ConfigFolder);
-                    using (var r = new Repository(Root))
-                        r.RemoveUntrackedFiles();
-                }
-            }
-            catch (Exception e)
-            {
-                Logger.Log.Write(e);
-                throw;
-            }
-        }
     }
 
     public static class GitExtensions
@@ -192,9 +175,12 @@ namespace TeamCityConfigMonitor
                     .ToArray();
                 repository.Index.Stage(paths);
                 Logger.Log.Write("{0} configuration changes discovered.", paths.Count());
-                var message = GetMessage(paths, key);
-                repository.Commit(message, committer);
-                Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
+                var cd = GetCommitDetails(paths, key);
+                if (cd.Author != null)
+                    repository.Commit(cd.Message, cd.Author, committer);
+                else
+                    repository.Commit(cd.Message, committer);
+                Logger.Log.Write("Configuration changes committed to local git repository with author: '{0}', and message:\n{1}", (cd.Author != null) ? cd.Author.Name : "null", cd.Message);
             }
         }
 
@@ -210,7 +196,7 @@ namespace TeamCityConfigMonitor
             }
         }
 
-        private static string GetMessage(IEnumerable<string> paths, string pool)
+        private static CommitDetails GetCommitDetails(IEnumerable<string> paths, string pool)
         {
             var messages = new Dictionary<string, Dictionary<string, string>>
             {
@@ -242,9 +228,50 @@ namespace TeamCityConfigMonitor
             var enumerable = paths as string[] ?? paths.ToArray();
             if (enumerable.Any(x => x.StartsWith("projects") && Path.GetFileName(Path.GetDirectoryName(x)) == "buildTypes"))
             {
-                return string.Format(messages[pool]["Project"], Path.GetFileNameWithoutExtension(enumerable.First(x => x.EndsWith(".xml"))));
+                var configId = Path.GetFileNameWithoutExtension(enumerable.First(x => x.EndsWith(".xml")));
+                return new CommitDetails(string.Format(messages[pool]["Project"], configId), configId);
             }
-            return string.Format(messages[pool]["Default"], enumerable.Count(), enumerable.Count() == 1 ? string.Empty : "s");
+            return new CommitDetails(string.Format(messages[pool]["Default"], enumerable.Count(), enumerable.Count() == 1 ? string.Empty : "s"));
+        }
+
+        class CommitDetails
+        {
+            public CommitDetails(string message, string configId = null)
+            {
+                Message = message;
+                if (!string.IsNullOrWhiteSpace(configId))
+                {
+                    try
+                    {
+                        var auditEntry = Helpers.ReadEndTokens(ConfigurationManager.AppSettings.Get("TeamCityAuditLog"), 5, Encoding.UTF8, Environment.NewLine).Last(x => x.Contains(string.Format("id={0},", configId)));
+                        var userId = auditEntry.Split(new[] { "id=" }, StringSplitOptions.RemoveEmptyEntries).Last().TrimEnd('"', '}', ' ');
+                        Author = GetAuthor(userId);
+                    }
+                    catch
+                    {
+                        Author = null;
+                    }
+                }
+            }
+
+            public string Message { get; private set; }
+            public Signature Author { get; private set; }
+
+            private Signature GetAuthor(string userId)
+            {
+                using (var client = new WebClient())
+                {
+                    var up = string.Format("{0}:{1}",
+                        ConfigurationManager.AppSettings.Get("TeamCityUsername"),
+                        ConfigurationManager.AppSettings.Get("TeamCityPassword"));
+                    var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(up));
+                    client.Headers[HttpRequestHeader.Authorization] = "Basic " + credentials;
+                    var user = XDocument.Load(client.OpenRead(string.Concat(ConfigurationManager.AppSettings.Get("TeamCityUrl").TrimEnd('/'), "/httpAuth/app/rest/users/id:", userId))).Root;
+                    return user != null
+                        ? new Signature(user.Attribute("name").Value, user.Attribute("email").Value, DateTimeOffset.Now)
+                        : null;
+                }
+            }
         }
     }
 }

@@ -1,8 +1,11 @@
 param(
   [Parameter(Mandatory = $true)]
   [string] $configFile,
-
+  
   [string] $teamCityDataDir = $null,
+  [string] $teamCityAuditLog = $null,
+  [string] $teamCityUsername = $null,
+  [string] $teamCityPassword = $null,
 
   [Parameter(Mandatory = $true)]
   [string] $gitConfigName,
@@ -15,6 +18,10 @@ param(
 $xml = (Get-Content $configFile) -as [xml]
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigName"]/@value').set_InnerXML($gitConfigName)
 $xml.SelectSingleNode('/configuration/appSettings/add[@key="GitConfigEmail"]/@value').set_InnerXML($gitConfigEmail)
+
+$xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityAuditLog"]/@value').set_InnerXML($teamCityAuditLog)
+$xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityUsername"]/@value').set_InnerXML($teamCityUsername)
+$xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityPassword"]/@value').set_InnerXML($teamCityPassword)
 if($teamCityDataDir) {
     $xml.SelectSingleNode('/configuration/appSettings/add[@key="TeamCityDataDir"]/@value').set_InnerXML($teamCityDataDir)
 }
