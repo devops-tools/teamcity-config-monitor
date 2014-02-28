@@ -267,7 +267,7 @@ namespace TeamCityConfigMonitor
                         var up = string.Format("{0}:{1}",
                             ConfigurationManager.AppSettings.Get("TeamCityUsername"),
                             ConfigurationManager.AppSettings.Get("TeamCityPassword"));
-                        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(up));
+                        var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(up), Base64FormattingOptions.None);
                         client.Headers[HttpRequestHeader.Authorization] = "Basic " + credentials;
                         var user = XDocument.Load(client.OpenRead(string.Concat(ConfigurationManager.AppSettings.Get("TeamCityUrl").TrimEnd('/'), "/httpAuth/app/rest/users/id:", userId))).Root;
                         return user != null
