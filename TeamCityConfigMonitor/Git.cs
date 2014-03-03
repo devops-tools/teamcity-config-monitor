@@ -17,7 +17,7 @@ namespace TeamCityConfigMonitor
         private static readonly string GitConfigEmail = ConfigurationManager.AppSettings.Get("GitConfigEmail");
         public static readonly string Origin = ConfigurationManager.AppSettings.Get("GitRemoteRepository");
         static readonly string ConfigFolder = Path.Combine(Helpers.GetDataFolder(), "config");
-        public static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildnumbers.properties" };
+        public static readonly string[] IgnoredExtensions = { ".1", ".2", ".3", ".new", ".bak", ".buildNumbers.properties" };
 
         private static Signature Committer
         {
@@ -181,18 +181,6 @@ namespace TeamCityConfigMonitor
                 else
                     repository.Commit(cd.Message, committer);
                 Logger.Log.Write("Configuration changes committed to local git repository with author: '{0}', and message:\n{1}", (cd.Author != null) ? cd.Author.Name : "null", cd.Message);
-            }
-        }
-
-        public static void RemoveIgnoredPaths(this Repository repository, Signature committer)
-        {
-            var paths = repository.Index.Select(x => x.Path).Where(x => Git.IgnoredExtensions.Any(x.EndsWith)).ToArray();
-            if (paths.Any())
-            {
-                repository.Index.Remove(paths, false);
-                var message = string.Format("Removed {0} previously indexed, but now ignored, paths from source control.", paths.Count());
-                repository.Commit(message, committer);
-                Logger.Log.Write("Configuration changes committed to local git repository with message:\n{0}", message);
             }
         }
 
