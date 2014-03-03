@@ -192,7 +192,7 @@ namespace TeamCityConfigMonitor
                     "Untracked",
                     new Dictionary<string, string>
                     {
-                        { "Project", "{0}, added by: {1}." },
+                        { "Project", "{0}, added by: {1}. {2}" },
                         { "Default", "{0} configuration file addition{1} detected." }
                     }
                 },
@@ -200,7 +200,7 @@ namespace TeamCityConfigMonitor
                     "Modified",
                     new Dictionary<string, string>
                     {
-                        { "Project", "{0}, modified by: {1}." },
+                        { "Project", "{0}, modified by: {1}. {2}" },
                         { "Default", "{0} configuration file modification{1} detected." }
                     }
                 },
@@ -226,7 +226,8 @@ namespace TeamCityConfigMonitor
         {
             public CommitDetails(string message, string configId = null)
             {
-                Message = string.Format(message, configId, "Unknown user");
+                var url = string.Concat(ConfigurationManager.AppSettings.Get("TeamCityUrl").TrimEnd('/'), "/viewType.html?buildTypeId=", configId);
+                Message = string.Format(message, configId, "Unknown user", url);
                 if (!string.IsNullOrWhiteSpace(configId))
                 {
                     try
@@ -235,7 +236,7 @@ namespace TeamCityConfigMonitor
                         var userId = auditEntry.Split(new[] { "id=" }, StringSplitOptions.RemoveEmptyEntries).Last().TrimEnd('"', '}', ' ');
                         Author = GetAuthor(userId);
                         if (Author != null)
-                            Message = string.Format(message, configId, Author.Name);
+                            Message = string.Format(message, configId, Author.Name, url);
                     }
                     catch (Exception ex)
                     {
